@@ -1,4 +1,4 @@
-# TreadsAndRobot
+# Treads and Traveler
 
-In this repository you can find various a compleated
+In this repository you can find compleated
 assignments for Treads and Traveler solutions.
