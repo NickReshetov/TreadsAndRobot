@@ -13,7 +13,11 @@ namespace Traveler
 
         public static (int x, int y, char direction)[] Run(string robotsCommands)
         {
-            var endCoordinates = _robotService.GetEndCoordinates(robotsCommands);
+            var endCoordinates = _robotService
+                .GetEndCoordinatesAsync(robotsCommands)
+                .GetAwaiter()
+                .GetResult()
+                .ToArray();
 
             return endCoordinates;
         }
