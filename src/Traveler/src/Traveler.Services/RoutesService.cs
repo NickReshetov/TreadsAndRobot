@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Traveler.Dtos;
 using Traveler.Services.Exceptions;
 using Traveler.Services.Interfaces;
@@ -18,19 +19,19 @@ namespace Traveler.Services
         private const int StartingPointParametersCount = 3;
         private const char StartingPointParametersSeparator = ',';
 
-        public IEnumerable<RouteDto> GetRoutesFromCommands(string rawRobotsCommands)
+        public async Task<IEnumerable<RouteDto>> GetRoutesFromCommandsAsync(string rawRobotsCommands)
         {
             var routeDtos = new List<RouteDto>();
 
-            var robotCommandsWithoutComments = GetRobotCommandsWithoutComments(rawRobotsCommands);
+            var robotCommandsWithoutComments = await GetRobotCommandsWithoutCommentsAsync(rawRobotsCommands);
 
-            var startingPositionsAndRouteSteps = GetStartingPositionsAndRouteSteps(robotCommandsWithoutComments);
+            var startingPositionsAndRouteSteps = await GetStartingPositionsAndRouteStepsAsync(robotCommandsWithoutComments);
 
             foreach (var startingPositionAndRouteStep in startingPositionsAndRouteSteps)
             {
-                var startingPosition = GetStartingPosition(startingPositionAndRouteStep);
+                var startingPosition = await GetStartingPositionAsync(startingPositionAndRouteStep);
 
-                var routeSteps = GetRouteSteps(startingPositionAndRouteStep);
+                var routeSteps = await GetRouteStepsAsync(startingPositionAndRouteStep);
 
                 var routeDto = new RouteDto
                 {
@@ -44,7 +45,7 @@ namespace Traveler.Services
             return routeDtos;
         }
 
-        private static string GetRobotCommandsWithoutComments(string rawRobotsCommands)
+        private static async Task<string> GetRobotCommandsWithoutCommentsAsync(string rawRobotsCommands)
         {
             var robotsCommandsWithoutComments = rawRobotsCommands
                 .Split(NewLineSeparator)
@@ -55,7 +56,7 @@ namespace Traveler.Services
             return robotsCommands;
         }
 
-        private static string[] GetStartingPositionsAndRouteSteps(string robotCommand)
+        private static async Task<string[]> GetStartingPositionsAndRouteStepsAsync(string robotCommand)
         {
             return robotCommand
                 .Split(CommandsSeparator)
@@ -63,18 +64,18 @@ namespace Traveler.Services
                 .ToArray();
         }
 
-        private PositionDto GetStartingPosition(string startingPositionsAndRouteStep)
+        private async Task<PositionDto> GetStartingPositionAsync(string startingPositionsAndRouteStep)
         {
             var startingPosition = startingPositionsAndRouteStep
                 .Split(NewLineSeparator)
                 .First(line => line != string.Empty);
                 
-            var startingPositionDto = CreateRouteStartingPoint(startingPosition);
+            var startingPositionDto = await CreateRouteStartingPointAsync(startingPosition);
 
             return startingPositionDto;
         }
 
-        private static string GetRouteSteps(string startingPositionsAndRouteStep)
+        private static async Task<string> GetRouteStepsAsync(string startingPositionsAndRouteStep)
         {
             //We are skipping starting position and selecting routeSteps only,
             //even if they are in different lines
@@ -90,16 +91,16 @@ namespace Traveler.Services
             return routeSteps;
         }
 
-        private PositionDto CreateRouteStartingPoint(string unparsedStartingPointParameters)
+        private async Task<PositionDto> CreateRouteStartingPointAsync(string unparsedStartingPointParameters)
         {
-            var startingPointParameters = TryParseStartingPointParameters(unparsedStartingPointParameters);
+            var startingPointParameters = await TryParseStartingPointParametersAsync(unparsedStartingPointParameters);
 
-            var startingPoint = CreateRouteStartingPoint(startingPointParameters.x, startingPointParameters.y, startingPointParameters.direction);
+            var startingPoint = await CreateRouteStartingPointAsync(startingPointParameters.x, startingPointParameters.y, startingPointParameters.direction);
 
             return startingPoint;
         }
 
-        private (int x, int y, Direction direction) TryParseStartingPointParameters(string unparsedStartingPointParameters)
+        private async Task<(int x, int y, Direction direction)> TryParseStartingPointParametersAsync(string unparsedStartingPointParameters)
         {
             if (string.IsNullOrWhiteSpace(unparsedStartingPointParameters))
                 throw new StartingPointParseException($"StartingPoint wasn't parsed, because it was not specified!");
@@ -117,22 +118,22 @@ namespace Traveler.Services
 
             var parsingDirection = startingPointCoordinatesAndDirection[2];
 
-            var x = ParseStartingPointParameter(parsingX, ParsingParameterX);
+            var x = await ParseStartingPointParameterAsync(parsingX, ParsingParameterX);
 
-            var y = ParseStartingPointParameter(parsingY, ParsingParameterY);
+            var y = await ParseStartingPointParameterAsync(parsingY, ParsingParameterY);
 
-            var direction = (Direction)ParseStartingPointParameter(parsingDirection, ParsingParameterDirection);
+            var direction = await ParseStartingPointParameterAsync(parsingDirection, ParsingParameterDirection);
 
-            return (x, y, direction);
+            return (x, y, (Direction)direction);
         }
 
-        private static int ParseStartingPointParameter(string unparsedStartingPointParameter, string parameterType)
+        private static async Task<int> ParseStartingPointParameterAsync(string unparsedStartingPointParameter, string parameterType)
         {
             object direction = null;
             var startingPointParameter = 0;
 
             if (parameterType == ParsingParameterDirection)
-                ValidateUnsupportedCharacters(unparsedStartingPointParameter.ToCharArray(), typeof(StartingPointParseException));
+                await ValidateUnsupportedCharactersAsync(unparsedStartingPointParameter.ToCharArray(), typeof(StartingPointParseException));
 
             var isParsed = parameterType == ParsingParameterDirection ?
                 Enum.TryParse(typeof(Direction), unparsedStartingPointParameter, true, out direction) :
@@ -147,9 +148,9 @@ namespace Traveler.Services
             return startingPointParameter;
         }
 
-        private PositionDto CreateRouteStartingPoint(int x, int y, Direction direction)
+        private async Task<PositionDto> CreateRouteStartingPointAsync(int x, int y, Direction direction)
         {
-            ValidateStartingPointParameters(x, y, direction);
+           await ValidateStartingPointParametersAsync(x, y, direction);
 
             var startingPoint = new PositionDto
             {
@@ -161,7 +162,7 @@ namespace Traveler.Services
             return startingPoint;
         }
 
-        private void ValidateStartingPointParameters(int x, int y, Direction direction)
+        private async Task ValidateStartingPointParametersAsync(int x, int y, Direction direction)
         {
             if (x < 0)
                 throw new StartingPointOutOfRangeException("Starting point X coordinate should be greater or equal zero");
@@ -170,7 +171,7 @@ namespace Traveler.Services
                 throw new StartingPointOutOfRangeException("Starting point Y coordinate should be greater or equal zero");
         }
 
-        private static void ValidateUnsupportedCharacters(char[] inputSymbols, Type type)
+        private static async Task ValidateUnsupportedCharactersAsync(char[] inputSymbols, Type type)
         {
             var areThereAnyNonLetterCharacters = inputSymbols.Any(rs => !char.IsLetter(rs));
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Traveler.Dtos;
 using Traveler.Services.Exceptions;
 using Traveler.Services.Interfaces;
@@ -11,26 +12,26 @@ namespace Traveler.Services
     {
         private const int MovingStep = 1;
         
-        public PositionDto CalculateRoutesEndPosition(RouteDto routeDto)
+        public async Task<PositionDto> CalculateRoutesEndPositionAsync(RouteDto routeDto)
         {
-            var routeSteps = TryParseRoute(routeDto.RouteSteps);
+            var routeSteps = await ParseRouteAsync(routeDto.RouteSteps);
 
             if (routeSteps == null)
                 return routeDto.StartingPosition;
 
-            var endPoint = CalculateRouteEndPoint(routeDto.StartingPosition, routeSteps);
+            var endPoint = await CalculateRouteEndPointAsync(routeDto.StartingPosition, routeSteps);
 
             return endPoint;
         }
 
-        private static IEnumerable<RouteStep> TryParseRoute(string route)
+        private static async Task<IEnumerable<RouteStep>> ParseRouteAsync(string route)
         {
             if (string.IsNullOrWhiteSpace(route))
                 return null;
 
             var unparsedRouteSteps = route.Trim().ToCharArray();
 
-            ValidateUnsupportedCharacters(unparsedRouteSteps, typeof(RouteParseException));
+            await ValidateUnsupportedCharactersAsync(unparsedRouteSteps, typeof(RouteParseException));
 
             var routeSteps = new List<RouteStep>();
 
@@ -49,7 +50,7 @@ namespace Traveler.Services
             return routeSteps;
         }
 
-        private PositionDto CalculateRouteEndPoint(PositionDto startingPoint, IEnumerable<RouteStep> routeSteps)
+        private async Task<PositionDto> CalculateRouteEndPointAsync(PositionDto startingPoint, IEnumerable<RouteStep> routeSteps)
         {
             var routeCoordinates = new List<PositionDto> { startingPoint };
 
@@ -57,7 +58,7 @@ namespace Traveler.Services
             {
                 var currentPosition = routeCoordinates.LastOrDefault();
 
-                var nextPosition = GetNextPosition(currentPosition, routeStep);
+                var nextPosition = await GetNextPositionAsync(currentPosition, routeStep);
 
                 routeCoordinates.Add(nextPosition);
             }
@@ -67,7 +68,7 @@ namespace Traveler.Services
             return endPosition;
         }
 
-        private PositionDto GetNextPosition(PositionDto currentPosition, RouteStep routeStep)
+        private async Task<PositionDto> GetNextPositionAsync(PositionDto currentPosition, RouteStep routeStep)
         {
             PositionDto nextPosition = null;
 
@@ -75,25 +76,25 @@ namespace Traveler.Services
             {
                 case RouteStep.F:
                     {
-                        nextPosition = MoveForward(currentPosition);
+                        nextPosition = await MoveForwardAsync(currentPosition);
                         break;
                     }
 
                 case RouteStep.B:
                     {
-                        nextPosition = MoveBackward(currentPosition);
+                        nextPosition = await MoveBackwardAsync(currentPosition);
                         break;
                     }
 
                 case RouteStep.L:
                     {
-                        nextPosition = TurnLeft(currentPosition);
+                        nextPosition = await TurnLeftAsync(currentPosition);
                         break;
                     }
 
                 case RouteStep.R:
                     {
-                        nextPosition = TurnRight(currentPosition); 
+                        nextPosition = await TurnRightAsync(currentPosition); 
                         break;
                     }
             }
@@ -101,7 +102,7 @@ namespace Traveler.Services
             return nextPosition;
         }
 
-        private PositionDto TurnRight(PositionDto currentPosition)
+        private async Task<PositionDto> TurnRightAsync(PositionDto currentPosition)
         {
             var nextPosition = new PositionDto();
 
@@ -143,7 +144,7 @@ namespace Traveler.Services
             return nextPosition;
         }
 
-        private PositionDto TurnLeft(PositionDto currentPosition)
+        private async Task<PositionDto> TurnLeftAsync(PositionDto currentPosition)
         {
             var nextPosition = new PositionDto();
 
@@ -185,7 +186,7 @@ namespace Traveler.Services
             return nextPosition;
         }
 
-        private PositionDto MoveBackward(PositionDto currentPosition)
+        private async Task<PositionDto> MoveBackwardAsync(PositionDto currentPosition)
         {
             var nextPosition = new PositionDto();
 
@@ -227,7 +228,7 @@ namespace Traveler.Services
             return nextPosition;
         }
 
-        private PositionDto MoveForward(PositionDto currentPosition)
+        private async Task<PositionDto> MoveForwardAsync(PositionDto currentPosition)
         {
             var nextPosition = new PositionDto();
 
@@ -269,7 +270,7 @@ namespace Traveler.Services
             return nextPosition;
         }
 
-        private static void ValidateUnsupportedCharacters(char[] inputSymbols, Type type)
+        private static async Task ValidateUnsupportedCharactersAsync(char[] inputSymbols, Type type)
         {
             var areThereAnyNonLetterCharacters = inputSymbols.Any(rs => !char.IsLetter(rs));
 
