@@ -14,7 +14,7 @@ namespace Traveler.Services
         
         public async Task<PositionDto> CalculateRoutesEndPositionAsync(RouteDto routeDto)
         {
-            var routeSteps = await TryParseRouteAsync(routeDto.RouteSteps);
+            var routeSteps = await ParseRouteAsync(routeDto.RouteSteps);
 
             if (routeSteps == null)
                 return routeDto.StartingPosition;
@@ -24,7 +24,7 @@ namespace Traveler.Services
             return endPoint;
         }
 
-        private static async Task<IEnumerable<RouteStep>> TryParseRouteAsync(string route)
+        private static async Task<IEnumerable<RouteStep>> ParseRouteAsync(string route)
         {
             if (string.IsNullOrWhiteSpace(route))
                 return null;
