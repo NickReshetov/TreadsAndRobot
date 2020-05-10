@@ -1,9 +1,10 @@
-﻿using Traveler.Dtos;
+﻿using System.Threading.Tasks;
+using Traveler.Dtos;
 
 namespace Traveler.Services.Interfaces
 {
     public interface ILocationService
     {
-        PositionDto CalculateRoutesEndPosition(RouteDto route);
+        Task<PositionDto> CalculateRoutesEndPositionAsync(RouteDto route);
     }
 }

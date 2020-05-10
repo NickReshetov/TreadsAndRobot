@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Traveler.Dtos;
 using Traveler.Services.Interfaces;
 
@@ -17,32 +18,36 @@ namespace Traveler.Services
             _routesService = routesService;
         }
 
-        public (int x, int y, char direction)[] GetEndCoordinates(string rawRobotsCommands)
+        public async Task<IEnumerable<(int X, int Y, char)>> GetEndCoordinatesAsync(string rawRobotsCommands)
         {
-            var routeDtos = _routesService.GetRoutesFromCommands(rawRobotsCommands);
+            var routeDtos = await _routesService.GetRoutesFromCommandsAsync(rawRobotsCommands);
 
-            var endPositionDtos = routeDtos.Select(GetEndPosition);
+            var endPositionDtos = routeDtos
+                .Select(async r => await GetEndPositionAsync(r))
+                .Select(t => t.GetAwaiter().GetResult())
+                .ToList();
 
-            var endCoordinates = GetCoordinatesFromPositions(endPositionDtos);
+            var endCoordinates = await GetCoordinatesFromPositionsAsync(endPositionDtos);
 
             return endCoordinates;
         }
 
-        private PositionDto GetEndPosition(RouteDto routeDto)
+        private async Task<PositionDto> GetEndPositionAsync(RouteDto routeDto)
         {
-            var endPosition = _locationService.CalculateRoutesEndPosition(routeDto);
+            var endPosition = await _locationService.CalculateRoutesEndPositionAsync(routeDto);
 
             return endPosition;
         }
 
-        private static (int X, int Y, char)[] GetCoordinatesFromPositions(IEnumerable<PositionDto> endPositions)
+        private static async Task<IEnumerable<(int X, int Y, char)>> GetCoordinatesFromPositionsAsync(IEnumerable<PositionDto> endPositions)
         {
             return endPositions
-                .Select(p => (p.X, p.Y, ConvertDirectionToChar(p.Direction)))
+                .Select(async p => (p.X, p.Y, await ConvertDirectionToCharAsync(p.Direction)))
+                .Select(t => t.GetAwaiter().GetResult())
                 .ToArray();
         }
 
-        private static char ConvertDirectionToChar(Direction direction)
+        private static async Task<char> ConvertDirectionToCharAsync(Direction direction)
         {
             return direction.ToString()
                 .ToCharArray()

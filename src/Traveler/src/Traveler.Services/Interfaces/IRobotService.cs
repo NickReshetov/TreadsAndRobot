@@ -1,7 +1,10 @@
-﻿namespace Traveler.Services.Interfaces
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Traveler.Services.Interfaces
 {
     public interface IRobotService
     {
-        (int x, int y, char direction)[] GetEndCoordinates(string routeDtos);
+        Task<IEnumerable<(int X, int Y, char)>> GetEndCoordinatesAsync(string routeDtos);
     }
 }

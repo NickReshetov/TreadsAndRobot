@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Traveler.Dtos;
 
 namespace Traveler.Services.Interfaces
 {
     public interface IRoutesService
     {
-        IEnumerable<RouteDto> GetRoutesFromCommands(string rawRobotsCommands);
+        Task<IEnumerable<RouteDto>> GetRoutesFromCommandsAsync(string rawRobotsCommands);
     }
 }
